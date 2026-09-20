@@ -1447,5 +1447,22 @@
             });
         };
     </script>
+<!-- Firebase Config & Setup -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCK8dtZOvdgX_rpNb7QLE3Z0UBv6hf3gew",
+    authDomain: "web-kas-karang-taruna.firebaseapp.com",
+    projectId: "web-kas-karang-taruna",
+    storageBucket: "web-kas-karang-taruna.firebasestorage.app",
+    messagingSenderId: "587878113453",
+    appId: "1:587878113453:web:d27fe4fe5d2962304fa624"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+</script>
 </body>
 </html>
