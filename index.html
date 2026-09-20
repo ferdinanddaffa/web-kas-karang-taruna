@@ -1450,7 +1450,7 @@
 <!-- Firebase Config & Realtime Sync -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCK8dtZOvdgX_rpNb7QLE3Z0UBv6hf3gew",
@@ -1465,20 +1465,23 @@
   const db = getFirestore(app);
   const docRef = doc(db, "kasData", "mainStore");
 
-  let isFirstLoad = true;
+  let isRemoteLoaded = false;
 
-  // Overwrite fungsi saveData global
+  // Fungsi simpan data ke Firestore
   window.saveData = async function() {
-    if (window.appData) {
-      const cleanData = JSON.parse(JSON.stringify(window.appData));
-      localStorage.setItem('kas_app_data', JSON.stringify(cleanData));
+    if (!window.appData) return;
+    
+    // Jangan overwrite ke cloud jika belum pernah berhasil download dari cloud
+    if (!isRemoteLoaded) return;
 
-      try {
-        await setDoc(docRef, cleanData);
-        console.log("Data berhasil tersimpan di Firestore");
-      } catch (err) {
-        console.error("Gagal simpan ke Firestore:", err);
-      }
+    const cleanData = JSON.parse(JSON.stringify(window.appData));
+    localStorage.setItem('kas_app_data', JSON.stringify(cleanData));
+
+    try {
+      await setDoc(docRef, cleanData);
+      console.log("Data tersimpan ke Firestore");
+    } catch (err) {
+      console.error("Gagal simpan ke Firestore:", err);
     }
   };
 
@@ -1488,6 +1491,7 @@
       const serverData = snapshot.data();
       window.appData = serverData;
       localStorage.setItem('kas_app_data', JSON.stringify(serverData));
+      isRemoteLoaded = true;
 
       if (typeof window.refreshAppUI === 'function') {
         window.refreshAppUI();
@@ -1495,11 +1499,12 @@
         refreshAppUI();
       }
     } else {
-      if (isFirstLoad && window.appData) {
+      // Jika di Firestore benar-benar belum ada data, upload data lokal saat ini
+      if (window.appData) {
+        isRemoteLoaded = true;
         window.saveData();
       }
     }
-    isFirstLoad = false;
   }, (error) => {
     console.error("Error pada Firestore Listener:", error);
   });
