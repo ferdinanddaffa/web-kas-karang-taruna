@@ -1447,41 +1447,55 @@
             });
         };
     </script>
-<!-- Firebase Config & Setup -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<!-- Firebase Config & Realtime Sync -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCK8dtZOvdgX_rpNb7QLE3Z0UBv6hf3gew",
-    authDomain: "web-kas-karang-taruna.firebaseapp.com",
-    projectId: "web-kas-karang-taruna",
-    storageBucket: "web-kas-karang-taruna.firebasestorage.app",
-    messagingSenderId: "587878113453",
-    appId: "1:587878113453:web:d27fe4fe5d2962304fa624"
-  };
+      const firebaseConfig = {
+        apiKey: "AIzaSyCK8dtZOvdgX_rpNb7QLE3Z0UBv6hf3gew",
+        authDomain: "web-kas-karang-taruna.firebaseapp.com",
+        projectId: "web-kas-karang-taruna",
+        storageBucket: "web-kas-karang-taruna.firebasestorage.app",
+        messagingSenderId: "587878113453",
+        appId: "1:587878113453:web:d27fe4fe5d2962304fa624"
+      };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const docRef = doc(db, "kasData", "mainStore");
 
-  // 1. Ganti fungsi saveData agar menyimpan langsung ke Firestore
-  window.saveData = async function() {
-    try {
-      await setDoc(doc(db, "kasData", "mainStore"), window.appData);
-    } catch (e) {
-      console.error("Gagal menyimpan ke Firestore:", e);
-    }
-  };
+      // Overwrite fungsi saveData global
+      window.saveData = async function() {
+        if (window.appData) {
+          localStorage.setItem('kas_app_data', JSON.stringify(window.appData));
+          try {
+            await setDoc(docRef, JSON.parse(JSON.stringify(window.appData)));
+            console.log("Data berhasil disinkron ke Firestore!");
+          } catch (err) {
+            console.error("Gagal simpan ke Firestore:", err);
+          }
+        }
+      };
 
-  // 2. Dengarkan perubahan data Firestore secara Realtime
-  onSnapshot(doc(db, "kasData", "mainStore"), (docSnap) => {
-    if (docSnap.exists()) {
-      window.appData = docSnap.data();
-      if (typeof refreshAppUI === 'function') {
-        refreshAppUI();
-      }
-    }
-  });
-</script>
-</body>
+      // Dengarkan perubahan data secara realtime dari Firestore
+      onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const newData = snapshot.data();
+          window.appData = newData;
+          localStorage.setItem('kas_app_data', JSON.stringify(newData));
+          
+          if (typeof window.refreshAppUI === 'function') {
+            window.refreshAppUI();
+          } else if (typeof refreshAppUI === 'function') {
+            refreshAppUI();
+          }
+        } else {
+          if (window.appData) {
+            window.saveData();
+          }
+        }
+      });
+    </script>
+  </body>
 </html>
