@@ -1450,7 +1450,7 @@
 <!-- Firebase Config & Setup -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCK8dtZOvdgX_rpNb7QLE3Z0UBv6hf3gew",
@@ -1463,6 +1463,25 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+
+  // 1. Ganti fungsi saveData agar menyimpan langsung ke Firestore
+  window.saveData = async function() {
+    try {
+      await setDoc(doc(db, "kasData", "mainStore"), window.appData);
+    } catch (e) {
+      console.error("Gagal menyimpan ke Firestore:", e);
+    }
+  };
+
+  // 2. Dengarkan perubahan data Firestore secara Realtime
+  onSnapshot(doc(db, "kasData", "mainStore"), (docSnap) => {
+    if (docSnap.exists()) {
+      window.appData = docSnap.data();
+      if (typeof refreshAppUI === 'function') {
+        refreshAppUI();
+      }
+    }
+  });
 </script>
 </body>
 </html>
